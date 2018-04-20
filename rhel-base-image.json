@@ -1,0 +1,220 @@
+{
+  "variables": {
+    "rhel6_iso": "rhel-server-6.9-x86_64-dvd.iso",
+    "rhel6_iso_md5": "57e29b68d92e1fc2f294e85baa29c5af",
+    "rhel7_iso": "rhel-server-7.5-x86_64-dvd.iso",
+    "rhel7_iso_md5": "fdc2f2faa2e31f0ba77d49eab14651cf",
+    "rhsm_user": "",
+    "rhsm_password": "",
+    "esxi_host": "",
+    "esxi_datastore": "",
+    "esxi_user": "",
+    "esxi_password": ""
+  },
+  "builders": [
+    {
+      "name": "GCP-RHEL6",
+      "vm_name": "rhel-6-gcp",
+      "type": "qemu",
+      "iso_url": "isos/{{user `rhel6_iso`}}",
+      "iso_checksum": "{{user `rhel6_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "http_directory": "kickstart",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_wait_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "format": "raw",
+      "use_default_display": true,
+      "qemuargs": [
+        [ "-m", "1536M" ]
+      ],
+      "boot_command": [
+        "<tab><wait>",
+        " ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel6-kickstart-gcp.cfg<enter>"
+      ]
+    },
+    {
+      "name": "GCP-RHEL7",
+      "vm_name": "rhel-7-gcp",
+      "type": "qemu",
+      "iso_url": "isos/{{user `rhel7_iso`}}",
+      "iso_checksum": "{{user `rhel7_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "http_directory": "kickstart",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_wait_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "format": "raw",
+      "use_default_display": true,
+      "qemuargs": [
+        [ "-m", "1024M" ]
+      ],
+      "boot_command": [
+        "<up><wait><tab><wait>",
+        " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-cloud.cfg<enter>"
+      ]
+    },
+    {
+      "name": "Azure-RHEL6",
+      "vm_name": "rhel-6-azure",
+      "type": "hyperv-iso",
+      "iso_url": "C:/isos/{{user `rhel6_iso`}}",
+      "iso_checksum": "{{user `rhel6_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "http_directory": "kickstart",
+      "communicator": "ssh",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "use_fixed_vhd_format": true,
+      "skip_compaction": true,
+      "generation": 1,
+      "cpu": 1,
+      "ram_size": 1536,
+      "switch_name": "ExternalSwitch",
+      "boot_command": [
+        "<tab><wait>",
+        " ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel6-kickstart-azure.cfg<enter>"
+      ]
+    },
+    {
+      "name": "Azure-RHEL7",
+      "vm_name": "rhel-7-azure",
+      "type": "hyperv-iso",
+      "iso_url": "C:/isos/{{user `rhel7_iso`}}",
+      "iso_checksum": "{{user `rhel7_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "floppy_files": ["kickstart/rhel7-kickstart-cloud.cfg"],
+      "communicator": "ssh",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "use_fixed_vhd_format": true,
+      "skip_compaction": true,
+      "generation": 1,
+      "cpu": 1,
+      "ram_size": 1024,
+      "switch_name": "ExternalSwitch",
+      "boot_command": [
+        "<up><wait><tab><wait>",
+        " inst.ks=hd:fd0:/rhel7-kickstart-cloud.cfg<enter>"
+      ]
+    },
+    {
+      "name": "VMware-RHEL6",
+      "vm_name": "rhel-6-vmware",
+      "type": "vmware-iso",
+      "remote_type": "esx5",
+      "remote_host": "{{user `esxi_host`}}",
+      "remote_datastore": "{{user `esxi_datastore`}}",
+      "remote_cache_datastore": "{{user `esxi_datastore`}}",
+      "remote_cache_directory": "packer",
+      "remote_username": "{{user `esxi_user`}}",
+      "remote_password": "{{user `esxi_password`}}",
+      "format": "ovf",
+      "iso_url": "isos/{{user `rhel6_iso`}}",
+      "iso_checksum": "{{user `rhel6_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "http_directory": "kickstart",
+      "communicator": "ssh",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "disk_type_id": "zeroedthick",
+      "disk_adapter_type": "pvscsi",
+      "guest_os_type": "rhel6-64",
+      "headless": true,
+      "network_adapter_type": "vmxnet3",
+      "version": 11,
+      "tools_upload_flavor": "linux",
+      "vmx_data": {
+        "ethernet0.networkName": "VM Network",
+        "memsize": "1024"
+      },
+      "boot_command": [
+        "<tab><wait>",
+        " ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel6-kickstart-vmware.cfg<enter>"
+      ]
+    },
+    {
+      "name": "VMware-RHEL7",
+      "vm_name": "rhel-7-vmware",
+      "type": "vmware-iso",
+      "remote_type": "esx5",
+      "remote_host": "{{user `esxi_host`}}",
+      "remote_datastore": "{{user `esxi_datastore`}}",
+      "remote_cache_datastore": "{{user `esxi_datastore`}}",
+      "remote_cache_directory": "packer",
+      "remote_username": "{{user `esxi_user`}}",
+      "remote_password": "{{user `esxi_password`}}",
+      "format": "ovf",
+      "iso_url": "isos/{{user `rhel7_iso`}}",
+      "iso_checksum": "{{user `rhel7_iso_md5`}}",
+      "iso_checksum_type": "md5",
+      "http_directory": "kickstart",
+      "communicator": "ssh",
+      "ssh_username": "root",
+      "ssh_password": "to_be_disabled",
+      "ssh_timeout": "1h",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 10240,
+      "disk_type_id": "zeroedthick",
+      "disk_adapter_type": "pvscsi",
+      "guest_os_type": "rhel7-64",
+      "headless": true,
+      "network_adapter_type": "vmxnet3",
+      "version": 11,
+      "vmx_data": {
+        "ethernet0.networkName": "VM Network",
+        "memsize": "1024"
+      },
+      "boot_command": [
+        "<up><wait><tab><wait>",
+        " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-vmware.cfg<enter>"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "script": "rhel7-provisioner.sh",
+      "environment_vars":[
+        "RHSM_USER={{user `rhsm_user`}}",
+        "RHSM_PASSWORD={{user `rhsm_password`}}"
+      ],
+      "only": ["Azure-RHEL7", "GCP-RHEL7", "VMware-RHEL7"]
+    },
+    {
+      "type": "shell",
+      "script": "vmware-tools.sh",
+      "only": ["VMware-RHEL6"]
+    },
+    {
+      "type": "shell",
+      "script": "rhel6-provisioner.sh",
+      "environment_vars":[
+        "RHSM_USER={{user `rhsm_user`}}",
+        "RHSM_PASSWORD={{user `rhsm_password`}}"
+      ],
+      "only": ["Azure-RHEL6", "GCP-RHEL6", "VMware-RHEL6"]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "{{build_name}}-manifest.json"
+    }
+  ]
+}
+
+
