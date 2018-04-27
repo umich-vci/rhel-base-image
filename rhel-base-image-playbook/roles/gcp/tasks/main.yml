@@ -36,15 +36,19 @@
       - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     state: present
 
+# Start - This is a workaround for the fact that the Google repo metadata is signed
 - name: Add the Google GPG rpm key
   rpm_key:
     state: present
     key: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   register: import_key
 
-- name: Make cache
+- name: Make cache for Google repos
   command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk,google-cloud-compute'"
   when: import_key.changed
+  args:
+    warn: no
+# End - This is a workaround for the fact that the Google repo metadata is signed
 
 - name: Install GCE packages
   yum:
@@ -54,7 +58,6 @@
       - google-compute-engine
       - google-cloud-sdk
     state: present
-    update_cache: yes
 
 - name: Copy ifcfg-eth0 for GCP
   copy:
