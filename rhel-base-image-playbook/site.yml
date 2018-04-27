@@ -1,0 +1,34 @@
+---
+- hosts: all
+  gather_facts: true
+  tasks:
+    #- debug: var=hostvars
+    - name: Register with RHSM and autosubscribe
+      redhat_subscription:
+        state: present
+        username: "{{ rhsm_user }}"
+        password: "{{ rhsm_password }}"
+        auto_attach: yes
+
+    - name: Azure specific role
+      include_role:
+        name: azure
+      when: ansible_virtualization_type == "Hyper-V"
+
+    - name: GCP specific role
+      include_role:
+        name: gcp
+      when: ansible_virtualization_type == "kvm"
+
+    - name: VMware specific role
+      include_role:
+        name: vmware
+      when: ansible_virtualization_type == "VMware"
+    
+    - name: Common role
+      include_role:
+        name: common
+
+    - name: Deprovision WALinuxAgent
+      shell: waagent -force -deprovision
+      when: ansible_virtualization_type == "Hyper-V"

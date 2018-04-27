@@ -1,0 +1,45 @@
+# open-vmtools is installed by default on RHEL 7, but not RHEL 6
+# Install regular VMware Tools on RHEL 6
+
+- name: Mount VMware Tools CD (RHEL 6)
+  mount:
+    src: /dev/cdrom
+    path: /media/vmware
+    fstype: iso9660
+    state: mounted
+  when: ansible_distribution_major_version|int == 6
+
+# with_fileglob doesn't work with remote files
+# instead use the find module then use that output in the proceeding unarchive
+- name: Find VMwareTools-*.tar.gz
+  find:
+    paths: /media/vmware
+    patterns: VMwareTools-*.tar.gz
+  register: vmware_tools_tar
+  when: ansible_distribution_major_version|int == 6
+
+- name: Extract VMwareTools-*.tar.gz
+  unarchive:
+    src: "{{ item.path }}"
+    remote_src: yes
+    dest: /tmp
+  with_items: "{{ vmware_tools_tar.files }}"
+  when: ansible_distribution_major_version|int == 6
+
+- name: Unmount VMware Tools CD (RHEL 6)
+  mount:
+    path: /media/vmware
+    state: absent
+  when: ansible_distribution_major_version|int == 6
+
+- name: Install VMware Tools (RHEL 6)
+  shell: /tmp/vmware-tools-distrib/vmware-install.pl -d
+  when: ansible_distribution_major_version|int == 6
+
+- name: Remove VMware Tools extracted installer (RHEL 6)
+  file:
+    path: /tmp/vmware-tools-distrib
+    state: absent
+  when: ansible_distribution_major_version|int == 6
+
+# End - Install Regular VMware Tools on RHEL 6

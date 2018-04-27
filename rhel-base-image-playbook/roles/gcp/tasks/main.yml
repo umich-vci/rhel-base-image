@@ -1,0 +1,104 @@
+- name: Remove irqbalance for GCP
+  yum:
+    name: irqbalance
+    state: absent
+
+- name: Install the EPEL repository for GCP
+  yum:
+    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    state: present
+
+- name: Add the Google Cloud Compute repository
+  yum_repository:
+    name: google-cloud-compute
+    file: google-cloud
+    description: Google Cloud Compute
+    baseurl: https://packages.cloud.google.com/yum/repos/google-cloud-compute-el{{ ansible_distribution_major_version }}-x86_64
+    enabled: yes
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey: 
+      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    state: present
+
+- name: Add the Google Cloud SDK repository
+  yum_repository:
+    name: google-cloud-sdk
+    file: google-cloud
+    description: Google Cloud SDK
+    baseurl: https://packages.cloud.google.com/yum/repos/cloud-sdk-el{{ ansible_distribution_major_version }}-x86_64
+    enabled: yes
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    gpgkey:
+      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    state: present
+
+- name: Add the Google GPG rpm key
+  rpm_key:
+    state: present
+    key: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+  register: import_key
+
+- name: Make cache
+  command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk,google-cloud-compute'"
+  when: import_key.changed
+
+- name: Install GCE packages
+  yum:
+    name: 
+      - python-google-compute-engine
+      - google-compute-engine-oslogin
+      - google-compute-engine
+      - google-cloud-sdk
+    state: present
+    update_cache: yes
+
+- name: Copy ifcfg-eth0 for GCP
+  copy:
+    src: files/ifcfg-eth0
+    dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+
+- name : Remove rhgb kernel argument for GCP (RHEL 6)
+  command: grubby --remove-args=rhgb --update-kernel=ALL
+  when: ansible_distribution_major_version|int == 6
+
+- name : Remove quiet kernel argument for GCP (RHEL 6)
+  command: grubby --remove-args=quiet --update-kernel=ALL
+  when: ansible_distribution_major_version|int == 6
+
+- name: Add kernel arguments for GCP (RHEL 6)
+  command: grubby --args="console=ttyS0,38400n8d" --update-kernel=ALL
+  when: ansible_distribution_major_version|int == 6
+
+- name: Copy grub.conf template (RHEL 6)
+  copy:
+    src: files/grub.conf
+    dest: /tmp/grub.conf
+  when: ansible_distribution_major_version|int == 6
+
+- name: Merge existing grub.conf into template grub.conf (RHEL 6)
+  shell: grep -P "^[\t ]*initrd|^[\t ]*root|^[\t ]*kernel|^[\t ]*title" /boot/grub/grub.conf >> /tmp/grub.conf
+  when: ansible_distribution_major_version|int == 6
+  
+- name: Replace existing grub.conf with template (RHEL 6)
+  command: mv /tmp/grub.conf /boot/grub/grub.conf
+  when: ansible_distribution_major_version|int == 6
+
+- name: Configure kernel arguments for Azure (RHEL 7)
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX=crashkernel=auto rootdelay=300 console=ttyS0 earlyprintk=ttyS0 net.ifnames=0'
+  when: ansible_distribution_major_version|int == 7
+
+- name: Rebuild grub config (RHEL 7)
+  command: /usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
+  when: ansible_distribution_major_version|int == 7
+
+- name: Lock root account
+  user:
+    name: root
+    password: "!!"

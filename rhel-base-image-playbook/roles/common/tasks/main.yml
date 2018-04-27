@@ -1,0 +1,29 @@
+- name: Upgrade all packages
+  yum:
+    name: '*'
+    state: latest
+
+- name: Remove persistent network rules udev file
+  file:
+    path: /etc/udev/rules.d/70-persistent-net.rules
+    state: absent
+
+- name: Remove any generated SSH keys
+  file:
+    path: /etc/ssh/ssh_host_*
+    state: absent
+
+- name: yum clean all
+  command: yum clean all
+
+- name: Delete yum cache directory
+  file:
+    path: /var/cache/yum
+    state: absent
+
+- name: Unregister with RHSM
+  redhat_subscription:
+    state: absent
+
+- name: Subscription Manager Clean
+  command: subscription-manager clean
