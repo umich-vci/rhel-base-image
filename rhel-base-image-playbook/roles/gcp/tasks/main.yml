@@ -35,7 +35,7 @@
       - https://packages.cloud.google.com/yum/doc/yum-key.gpg
       - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     state: present
-    when: ansible_distribution_major_version|int == 7
+  when: ansible_distribution_major_version|int == 7
 
 # Start - This is a workaround for the fact that the Google repo metadata is signed
 - name: Add the Google GPG rpm key
@@ -68,6 +68,18 @@
       - google-compute-engine
     state: present
 
+- name: "Enable the rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms repository (RHEL 6)"
+  rhsm_repository:
+    name: rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms
+    state: present
+  when: ansible_distribution_major_version|int == 6
+
+- name: Install python27 from SCL (RHEL 6)
+  yum:
+    name: python27
+    state: present
+  when: ansible_distribution_major_version|int == 6
+
 - name: Enable python 2.7 SCL for Cloud SDK (RHEL 6)
   command: scl enable python27 "pip2.7 install --upgrade google_compute_engine"
   when: ansible_distribution_major_version|int == 6
@@ -82,6 +94,12 @@
 - name: Get Google Cloud SDK tar version (RHEL 6)
   command: cat /tmp/google-cloud-sdk/VERSION
   register: google_sdk_version
+  when: ansible_distribution_major_version|int == 6
+
+- name: Create /usr/local/share/google (RHEL 6)
+  file:
+    path: /usr/local/share/google
+    state: directory
   when: ansible_distribution_major_version|int == 6
 
 - name: Extract google-cloud-sdk-{{ google_sdk_version.stdout }}-linux-x86_64.tar.gz (RHEL 6)
