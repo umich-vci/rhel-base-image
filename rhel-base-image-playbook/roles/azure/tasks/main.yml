@@ -77,11 +77,11 @@
   command: grubby --args="rootdelay=300 console=ttyS0 earlyprintk=ttyS0" --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
-- name: Configure kernel arguments for Azure (RHEL 7)
+- name: Configure kernel arguments (RHEL 7)
   lineinfile:
     path: /etc/default/grub
     regexp: '^GRUB_CMDLINE_LINUX='
-    line: 'GRUB_CMDLINE_LINUX=crashkernel=auto rootdelay=300 console=ttyS0 earlyprintk=ttyS0 net.ifnames=0'
+    line: 'GRUB_CMDLINE_LINUX="crashkernel=auto rootdelay=300 console=ttyS0 earlyprintk=ttyS0 net.ifnames=0"'
   when: ansible_distribution_major_version|int == 7
 
 - name: Rebuild grub config (RHEL 7)
