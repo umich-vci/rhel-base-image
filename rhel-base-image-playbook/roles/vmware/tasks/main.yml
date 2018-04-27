@@ -1,6 +1,5 @@
+# Start - Install regular VMware Tools on RHEL 6
 # open-vmtools is installed by default on RHEL 7, but not RHEL 6
-# Install regular VMware Tools on RHEL 6
-
 - name: Mount VMware Tools CD (RHEL 6)
   mount:
     src: /dev/cdrom
@@ -41,5 +40,4 @@
     path: /tmp/vmware-tools-distrib
     state: absent
   when: ansible_distribution_major_version|int == 6
-
 # End - Install Regular VMware Tools on RHEL 6

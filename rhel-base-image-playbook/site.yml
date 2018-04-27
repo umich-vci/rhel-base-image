@@ -12,22 +12,22 @@
 
     - name: Azure specific role
       include_role:
-        name: azure
+        name: Azure
       when: ansible_virtualization_type == "Hyper-V"
 
     - name: GCP specific role
       include_role:
-        name: gcp
+        name: GCP
       when: ansible_virtualization_type == "kvm"
 
     - name: VMware specific role
       include_role:
-        name: vmware
+        name: VMware
       when: ansible_virtualization_type == "VMware"
     
     - name: Common role
       include_role:
-        name: common
+        name: Common
 
     - name: Deprovision WALinuxAgent
       shell: waagent -force -deprovision

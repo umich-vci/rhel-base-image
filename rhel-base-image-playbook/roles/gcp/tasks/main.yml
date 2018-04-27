@@ -1,9 +1,9 @@
-- name: Remove irqbalance for GCP
+- name: Remove irqbalance
   yum:
     name: irqbalance
     state: absent
 
-- name: Install the EPEL repository for GCP
+- name: Install the EPEL repository
   yum:
     name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
     state: present
@@ -22,7 +22,7 @@
       - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     state: present
 
-- name: Add the Google Cloud SDK repository
+- name: Add the Google Cloud SDK repository (RHEL 7)
   yum_repository:
     name: google-cloud-sdk
     file: google-cloud
@@ -35,6 +35,7 @@
       - https://packages.cloud.google.com/yum/doc/yum-key.gpg
       - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     state: present
+    when: ansible_distribution_major_version|int == 7
 
 # Start - This is a workaround for the fact that the Google repo metadata is signed
 - name: Add the Google GPG rpm key
@@ -43,36 +44,103 @@
     key: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   register: import_key
 
-- name: Make cache for Google repos
-  command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk,google-cloud-compute'"
+- name: Make cache for google-cloud-compute repo
+  command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-compute'"
   when: import_key.changed
   args:
     warn: no
+
+- name: Make cache for google-cloud-sdk repo
+  command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk'"
+  when: import_key.changed
+  args:
+    warn: no
+  when: ansible_distribution_major_version|int == 7
 # End - This is a workaround for the fact that the Google repo metadata is signed
 
 - name: Install GCE packages
   yum:
-    name: 
+    name:
+      - gce-disk-expand
       - python-google-compute-engine
       - google-compute-engine-oslogin
       - google-compute-engine
-      - google-cloud-sdk
     state: present
 
-- name: Copy ifcfg-eth0 for GCP
+- name: Enable python 2.7 SCL for Cloud SDK (RHEL 6)
+  command: scl enable python27 "pip2.7 install --upgrade google_compute_engine"
+  when: ansible_distribution_major_version|int == 6
+
+- name: Extract google-cloud-sdk.tar.gz (RHEL 6)
+  unarchive:
+    src: https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz
+    remote_src: yes
+    dest: /tmp
+  when: ansible_distribution_major_version|int == 6
+
+- name: Get Google Cloud SDK tar version (RHEL 6)
+  command: cat /tmp/google-cloud-sdk/VERSION
+  register: google_sdk_version
+  when: ansible_distribution_major_version|int == 6
+
+- name: Extract google-cloud-sdk-{{ google_sdk_version.stdout }}-linux-x86_64.tar.gz (RHEL 6)
+  unarchive:
+    src: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-{{ google_sdk_version.stdout }}-linux-x86_64.tar.gz
+    remote_src: yes
+    dest: /usr/local/share/google
+    extra_opts:
+      - --no-same-owner
+  when: ansible_distribution_major_version|int == 6
+
+- name: Link /usr/local/share/google/google-cloud-sdk/bin/git-credential-gcloud.sh (RHEL 6)
+  file:
+    src: /usr/local/share/google/google-cloud-sdk/bin/git-credential-gcloud.sh
+    dest: /usr/bin/git-credential-gcloud.sh
+    state: link
+  when: ansible_distribution_major_version|int == 6
+
+- name: Copy rhel6-sdk-template.sh for SCL entry SDK scripts (RHEL 6)
+  copy:
+    src: files/rhel6-sdk-template.sh
+    dest: /usr/bin/{{ item }}
+    mode: 0755
+  with_items:
+    - bq
+    - gsutil
+    - gcloud
+  when: ansible_distribution_major_version|int == 6
+
+- name: Configure SCL entry SDK scripts (RHEL 6)
+  lineinfile:
+    path: /usr/bin/{{ item }}
+    line: '/usr/local/share/google/google-cloud-sdk/bin/{{ item }} $@'
+    insertafter: EOF
+  with_items:
+    - bq
+    - gsutil
+    - gcloud
+  when: ansible_distribution_major_version|int == 6
+
+- name: Install Google Cloud SDK (RHEL 7)
+  yum:
+    name: google-cloud-sdk
+    state: present
+  when: ansible_distribution_major_version|int == 7
+
+- name: Copy ifcfg-eth0
   copy:
     src: files/ifcfg-eth0
     dest: /etc/sysconfig/network-scripts/ifcfg-eth0
 
-- name : Remove rhgb kernel argument for GCP (RHEL 6)
+- name : Remove rhgb kernel argument (RHEL 6)
   command: grubby --remove-args=rhgb --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
-- name : Remove quiet kernel argument for GCP (RHEL 6)
+- name : Remove quiet kernel argument (RHEL 6)
   command: grubby --remove-args=quiet --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
-- name: Add kernel arguments for GCP (RHEL 6)
+- name: Add kernel arguments (RHEL 6)
   command: grubby --args="console=ttyS0,38400n8d" --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
@@ -100,6 +168,17 @@
 - name: Rebuild grub config (RHEL 7)
   command: /usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
   when: ansible_distribution_major_version|int == 7
+
+- name: Remove udev persistent network rule generator
+  file:
+    path: /etc/udev/rules.d/75-persistent-net-generator.rules
+    state: absent
+
+- name: Link udev persistent network rule generator to /dev/null
+  file:
+    src: /dev/null
+    dest: /etc/udev/rules.d/75-persistent-net-generator.rules
+    state: link
 
 - name: Lock root account
   user:
