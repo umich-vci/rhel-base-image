@@ -1,6 +1,0 @@
-- name: Register with RHSM and autosubscribe
-  redhat_subscription:
-    state: present
-    username: "{{ rhsm_user }}"
-    password: "{{ rhsm_password }}"
-    auto_attach: yes
