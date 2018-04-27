@@ -3,3 +3,4 @@ packer_cache/
 .DS_Store
 output-*/
 *-manifest.json
+*.retry
