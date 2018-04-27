@@ -9,13 +9,15 @@
     "esxi_host": "",
     "esxi_datastore": "",
     "esxi_user": "",
-    "esxi_password": ""
+    "esxi_password": "",
+    "qemu_accelerator": "hvf"
   },
   "builders": [
     {
       "name": "GCP-RHEL6",
       "vm_name": "rhel-6-gcp",
       "type": "qemu",
+      "accelerator": "{{user `qemu_accelerator`}}",
       "iso_url": "isos/{{user `rhel6_iso`}}",
       "iso_checksum": "{{user `rhel6_iso_md5`}}",
       "iso_checksum_type": "md5",
@@ -26,6 +28,7 @@
       "shutdown_command": "shutdown -P now",
       "disk_size": 10240,
       "format": "raw",
+      "disk_cache": "none",
       "use_default_display": true,
       "qemuargs": [
         [ "-m", "1536M" ]
@@ -39,6 +42,7 @@
       "name": "GCP-RHEL7",
       "vm_name": "rhel-7-gcp",
       "type": "qemu",
+      "accelerator": "{{user `qemu_accelerator`}}",
       "iso_url": "isos/{{user `rhel7_iso`}}",
       "iso_checksum": "{{user `rhel7_iso_md5`}}",
       "iso_checksum_type": "md5",
@@ -49,9 +53,11 @@
       "shutdown_command": "shutdown -P now",
       "disk_size": 10240,
       "format": "raw",
+      "disk_cache": "none",
       "use_default_display": true,
       "qemuargs": [
-        [ "-m", "1024M" ]
+        [ "-m", "1024M" ],
+        [ "-global", "virtio-pci.disable-modern=on" ]
       ],
       "boot_command": [
         "<up><wait><tab><wait>",
@@ -186,18 +192,21 @@
   ],
   "provisioners": [
     {
+      "type": "ansible",
+      "playbook_file": "rhel-base-image-playbook/site.yml",
+      "extra_arguments": [
+        "--extra-vars", "rhsm_user={{user `rhsm_user`}} rhsm_password={{user `rhsm_password`}} enable_task_debugger=True"
+      ],
+      "only": ["GCP-RHEL7", "GCP-RHEL6", "VMware-RHEL7", "VMware-RHEL6"]
+    },
+    {
       "type": "shell",
       "script": "rhel7-provisioner.sh",
       "environment_vars":[
         "RHSM_USER={{user `rhsm_user`}}",
         "RHSM_PASSWORD={{user `rhsm_password`}}"
       ],
-      "only": ["Azure-RHEL7", "GCP-RHEL7", "VMware-RHEL7"]
-    },
-    {
-      "type": "shell",
-      "script": "vmware-tools.sh",
-      "only": ["VMware-RHEL6"]
+      "only": ["Azure-RHEL7"]
     },
     {
       "type": "shell",
@@ -206,7 +215,7 @@
         "RHSM_USER={{user `rhsm_user`}}",
         "RHSM_PASSWORD={{user `rhsm_password`}}"
       ],
-      "only": ["Azure-RHEL6", "GCP-RHEL6", "VMware-RHEL6"]
+      "only": ["Azure-RHEL6"]
     }
   ],
   "post-processors": [
