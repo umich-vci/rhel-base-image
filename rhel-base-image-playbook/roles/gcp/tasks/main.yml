@@ -52,10 +52,11 @@
 
 - name: Make cache for google-cloud-sdk repo
   command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk'"
-  when: import_key.changed
+  when: 
+    - import_key.changed
+    - ansible_distribution_major_version|int == 7
   args:
     warn: no
-  when: ansible_distribution_major_version|int == 7
 # End - This is a workaround for the fact that the Google repo metadata is signed
 
 - name: Install GCE packages
