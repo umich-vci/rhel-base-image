@@ -31,7 +31,8 @@
       "disk_cache": "none",
       "use_default_display": true,
       "qemuargs": [
-        [ "-m", "1536M" ]
+        [ "-m", "2048M" ],
+        [ "-global", "virtio-pci.disable-modern=on" ]
       ],
       "boot_command": [
         "<tab><wait>",
@@ -56,7 +57,7 @@
       "disk_cache": "none",
       "use_default_display": true,
       "qemuargs": [
-        [ "-m", "1024M" ],
+        [ "-m", "2048M" ],
         [ "-global", "virtio-pci.disable-modern=on" ]
       ],
       "boot_command": [
@@ -82,7 +83,7 @@
       "skip_compaction": true,
       "generation": 1,
       "cpu": 1,
-      "ram_size": 1536,
+      "ram_size": 2048,
       "switch_name": "ExternalSwitch",
       "boot_command": [
         "<tab><wait>",
@@ -107,7 +108,7 @@
       "skip_compaction": true,
       "generation": 1,
       "cpu": 1,
-      "ram_size": 1024,
+      "ram_size": 2048,
       "switch_name": "ExternalSwitch",
       "boot_command": [
         "<up><wait><tab><wait>",
@@ -145,7 +146,7 @@
       "tools_upload_flavor": "linux",
       "vmx_data": {
         "ethernet0.networkName": "VM Network",
-        "memsize": "1024"
+        "memsize": "2048"
       },
       "boot_command": [
         "<tab><wait>",
@@ -182,7 +183,7 @@
       "version": 11,
       "vmx_data": {
         "ethernet0.networkName": "VM Network",
-        "memsize": "1024"
+        "memsize": "2048"
       },
       "boot_command": [
         "<up><wait><tab><wait>",
