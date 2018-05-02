@@ -1,6 +1,15 @@
-- name: Remove irqbalance
+- name: Remove unneeded packages
   yum:
-    name: irqbalance
+    name:
+      - alsa-utils
+      - dmraid
+      - efibootmgr
+      - eject
+      - gpm
+      - irqbalance
+      - kexec-tools
+      - microcode_ctl
+      - smartmontools
     state: absent
 
 - name: Install the EPEL repository
@@ -50,7 +59,7 @@
   args:
     warn: no
 
-- name: Make cache for google-cloud-sdk repo
+- name: Make cache for google-cloud-sdk repo (RHEL 7)
   command: "yum -q makecache -y --disablerepo='*' --enablerepo='google-cloud-sdk'"
   when: 
     - import_key.changed
@@ -63,11 +72,11 @@
   yum:
     name:
       - gce-disk-expand
-      - python-google-compute-engine
-      - google-compute-engine-oslogin
       - google-compute-engine
+      - python-google-compute-engine
     state: present
 
+# Start - Install Google Cloud SDK on RHEL 6
 - name: "Enable the rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms repository (RHEL 6)"
   rhsm_repository:
     name: rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms
@@ -139,6 +148,7 @@
     - gsutil
     - gcloud
   when: ansible_distribution_major_version|int == 6
+# End - Install Google Cloud SDK on RHEL 6
 
 - name: Install Google Cloud SDK (RHEL 7)
   yum:
@@ -188,6 +198,21 @@
   command: /usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
   when: ansible_distribution_major_version|int == 7
 
+- name: Enable the rhel-{{ ansible_distribution_major_version }}-server-optional-rpms repository
+  rhsm_repository:
+    name: "rhel-{{ ansible_distribution_major_version }}-server-optional-rpms"
+    state: present
+
+- name: Install yum-cron
+  yum:
+    name: yum-cron
+    state: latest
+
+- name: Enable yum-cron at boot
+  service:
+    name: yum-cron
+    enabled: yes
+
 - name: Remove udev persistent network rule generator
   file:
     path: /etc/udev/rules.d/75-persistent-net-generator.rules
@@ -203,3 +228,14 @@
   user:
     name: root
     password: "!!"
+
+- name: Remove unneeded files
+  file:
+    path: /etc/boto.cfg
+    state: absent
+
+- name : Horrible hack to kill Google agent processes that hang shutdown (RHEL 6)
+  shell: 'nohup bash -c "while true; do sleep 2; pkill -9 google.*; done" >/dev/null 2>&1 &'
+  async: 3600
+  poll: 0
+  when: ansible_distribution_major_version|int == 6
