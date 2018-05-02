@@ -1,0 +1,105 @@
+---
+variables:
+  rhel6_iso: "rhel-server-6.9-x86_64-dvd.iso"
+  rhel6_iso_md5: "57e29b68d92e1fc2f294e85baa29c5af"
+  rhel7_iso: "rhel-server-7.5-x86_64-dvd.iso"
+  rhel7_iso_md5: "fdc2f2faa2e31f0ba77d49eab14651cf"
+  rhsm_user: ""
+  rhsm_password: ""
+  esxi_host: ""
+  esxi_datastore: ""
+  esxi_user: ""
+  esxi_password: ""
+  #This is Hypervisor.framework on macOS.  Unset will try kvm first and use tcg if that is unavailable
+  qemu_accelerator: "hvf"
+
+builders:
+  # The GCP RHEL 6 Builder
+  - name: GCP-RHEL6
+    vm_name: rhel-6-gcp
+    #Since GCP uses kvm and raw disks natively, easiest to build on qemu
+    type: qemu
+    accelerator: "{{user `qemu_accelerator`}}"
+    iso_url": isos/{{user `rhel6_iso`}}
+    iso_checksum: "{{user `rhel6_iso_md5`}}"
+    iso_checksum_type: md5
+    http_directory: kickstart
+    ssh_username: root
+    ssh_password: to_be_disabled
+    ssh_wait_timeout: 1h
+    shutdown_command: 'shutdown -P now'
+    disk_size: 10240
+    format: raw
+    #Best performance with cache disabled on raw disks
+    disk_cache: none
+    #This causes -display to not be specificially set in the qemu command line
+    #The platform default is used (which is more cross platform friendly)
+    use_default_display: true
+    qemuargs:
+      -
+        # Assign the VM 2 GB of RAM
+        - -m
+        - 2048M
+      -
+        # Disable modern implementation of virtio
+        # Required for RHEL 7 (at least with hvf accelerator)
+        - -global
+        - virtio-pci.disable-modern=on
+    
+    boot_command:
+      - <tab><wait>
+      - ' ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel6-kickstart-gcp.cfg<enter>'
+
+  # The GCP RHEL 7 Builder
+  - name: GCP-RHEL7
+    vm_name: rhel-7-gcp
+    #Since GCP uses kvm and raw disks natively, easiest to build on qemu
+    type: qemu
+    accelerator: "{{user `qemu_accelerator`}}"
+    iso_url: isos/{{user `rhel7_iso`}}
+    iso_checksum: "{{user `rhel7_iso_md5`}}"
+    iso_checksum_type: md5
+    http_directory: kickstart
+    ssh_username: root
+    ssh_password: to_be_disabled
+    ssh_wait_timeout: 1h
+    shutdown_command: shutdown -P now
+    disk_size: 10240
+    format: raw
+    #Best performance with cache disabled on raw disks
+    disk_cache: none
+    #This causes -display to not be specificially set in the qemu command line
+    #The platform default is used (which is more cross platform friendly)
+    use_default_display: true
+    qemuargs:
+      -
+        # Assign the VM 2 GB of RAM
+        - -m
+        - 2048M
+      -
+        # Disable modern implementation of virtio
+        # Required for RHEL 7 (at least with hvf accelerator)
+        - -global
+        - virtio-pci.disable-modern=on
+    
+    boot_command:
+      - "<up><wait><tab><wait>"
+      - " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-cloud.cfg<enter>"
+    
+
+provisioners:
+  - type: ansible
+    playbook_file: rhel-base-image-playbook/site.yml
+    extra_arguments:
+      - --extra-vars
+      - rhsm_user={{user `rhsm_user`}} rhsm_password={{user `rhsm_password`}} enable_task_debugger=True
+    only: 
+      - GCP-RHEL7
+      - GCP-RHEL6
+      - VMware-RHEL7
+      - VMware-RHEL6
+
+post-processors:
+  - type: manifest
+    output: '{{build_name}}-manifest.json'
+...
