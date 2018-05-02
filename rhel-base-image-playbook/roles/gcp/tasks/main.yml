@@ -4,7 +4,6 @@
       - alsa-utils
       - dmraid
       - efibootmgr
-      - eject
       - gpm
       - irqbalance
       - kexec-tools
