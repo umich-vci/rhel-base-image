@@ -1,4 +1,4 @@
-- name: "Enable the rhel-{{ ansible_distribution_major_version }}-server-extras-rpms repository for Azure"
+- name: Enable the rhel-{{ ansible_distribution_major_version }}-server-extras-rpms repository
   rhsm_repository:
     name: "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
     state: present
@@ -9,9 +9,9 @@
     state: latest
 
 - name: Enable WALinuxAgent at boot
-    service:
-      name: waagent
-      enabled: yes
+  service:
+    name: waagent
+    enabled: yes
 
 - name: Copy ifcfg-eth0
   copy:
@@ -22,17 +22,6 @@
   copy:
     src: files/network
     dest: /etc/sysconfig/network
-
-- name: Remove udev persistent network rule generator
-  file:
-    path: /etc/udev/rules.d/75-persistent-net-generator.rules
-    state: absent
-
-- name: Link udev persistent network rule generator to /dev/null
-  file:
-    src: /dev/null
-    dest: /etc/udev/rules.d/75-persistent-net-generator.rules
-    state: link
 
 - name: Configure SSH for Azure (1/2)
   lineinfile:
@@ -65,15 +54,15 @@
     regex: '^\(splashimage=.*\)'
     line: '#\1'
 
-- name : Remove rhgb kernel argument for Azure (RHEL 6)
+- name : Remove rhgb kernel argument (RHEL 6)
   command: grubby --remove-args=rhgb --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
-- name : Remove quiet kernel argument for Azure (RHEL 6)
+- name : Remove quiet kernel argument (RHEL 6)
   command: grubby --remove-args=quiet --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
-- name: Add kernel arguments for Azure (RHEL 6)
+- name: Add kernel arguments (RHEL 6)
   command: grubby --args="rootdelay=300 console=ttyS0 earlyprintk=ttyS0" --update-kernel=ALL
   when: ansible_distribution_major_version|int == 6
 
@@ -87,6 +76,17 @@
 - name: Rebuild grub config (RHEL 7)
   command: /usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
   when: ansible_distribution_major_version|int == 7
+
+- name: Remove udev persistent network rule generator
+  file:
+    path: /etc/udev/rules.d/75-persistent-net-generator.rules
+    state: absent
+
+- name: Link udev persistent network rule generator to /dev/null
+  file:
+    src: /dev/null
+    dest: /etc/udev/rules.d/75-persistent-net-generator.rules
+    state: link
 
 - name: Lock root account
   user:
