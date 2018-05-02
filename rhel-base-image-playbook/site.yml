@@ -10,6 +10,11 @@
         password: "{{ rhsm_password }}"
         auto_attach: yes
 
+    - name: Upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+
     - name: Azure specific role
       include_role:
         name: Azure
@@ -24,7 +29,7 @@
       include_role:
         name: VMware
       when: ansible_virtualization_type == "VMware"
-    
+
     - name: Common role
       include_role:
         name: Common

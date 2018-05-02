@@ -1,8 +1,3 @@
-- name: Upgrade all packages
-  yum:
-    name: '*'
-    state: latest
-
 - name: Remove persistent network rules udev file
   file:
     path: /etc/udev/rules.d/70-persistent-net.rules
@@ -29,3 +24,11 @@
 
 - name: Subscription Manager Clean
   command: subscription-manager clean
+
+- name: Remove unneeded files
+  file:
+    path:
+      - /root/anaconda-ks.cfg
+      - /root/install.*
+      - /var/log/anaconda.*
+    state: absent
