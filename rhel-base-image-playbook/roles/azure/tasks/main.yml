@@ -25,13 +25,13 @@
 
 - name: Configure SSH for Azure (1/2)
   lineinfile:
-    path: /etc/ssh/sshd_conf
+    path: /etc/ssh/sshd_config
     line: "# Set Azure SSH settings."
     insertafter: EOF
 
 - name: Configure SSH for Azure (2/2)
   lineinfile:
-    path: /etc/ssh/sshd_conf
+    path: /etc/ssh/sshd_config
     line: "ClientAliveInterval 180"
     insertafter: EOF
 
