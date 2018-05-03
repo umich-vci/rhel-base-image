@@ -62,7 +62,7 @@
       ],
       "boot_command": [
         "<up><wait><tab><wait>",
-        " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-cloud.cfg<enter>"
+        " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-gcp.cfg<enter>"
       ]
     },
     {
@@ -77,7 +77,7 @@
       "ssh_username": "root",
       "ssh_password": "to_be_disabled",
       "ssh_timeout": "1h",
-      "shutdown_command": "shutdown -P now",
+      "shutdown_command": "waagent -force -deprovision && shutdown -P now",
       "disk_size": 10240,
       "use_fixed_vhd_format": true,
       "skip_compaction": true,
@@ -85,6 +85,7 @@
       "cpu": 1,
       "ram_size": 2048,
       "switch_name": "ExternalSwitch",
+      "boot_wait": "30s",
       "boot_command": [
         "<tab><wait>",
         " ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel6-kickstart-azure.cfg<enter>"
@@ -97,12 +98,12 @@
       "iso_url": "C:/isos/{{user `rhel7_iso`}}",
       "iso_checksum": "{{user `rhel7_iso_md5`}}",
       "iso_checksum_type": "md5",
-      "floppy_files": ["kickstart/rhel7-kickstart-cloud.cfg"],
+      "http_directory": "kickstart",
       "communicator": "ssh",
       "ssh_username": "root",
       "ssh_password": "to_be_disabled",
       "ssh_timeout": "1h",
-      "shutdown_command": "shutdown -P now",
+      "shutdown_command": "waagent -force -deprovision && shutdown -P now",
       "disk_size": 10240,
       "use_fixed_vhd_format": true,
       "skip_compaction": true,
@@ -110,9 +111,10 @@
       "cpu": 1,
       "ram_size": 2048,
       "switch_name": "ExternalSwitch",
+      "boot_wait": "30s",
       "boot_command": [
         "<up><wait><tab><wait>",
-        " inst.ks=hd:fd0:/rhel7-kickstart-cloud.cfg<enter>"
+        " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/rhel7-kickstart-azure.cfg<enter>"
       ]
     },
     {
@@ -193,30 +195,39 @@
   ],
   "provisioners": [
     {
+      "type": "shell",
+      "inline": "subscription-manager register --auto-attach --username={{user `rhsm_user`}} --password={{user `rhsm_password`}}"
+    },
+    {
       "type": "ansible",
       "playbook_file": "rhel-base-image-playbook/site.yml",
       "extra_arguments": [
-        "--extra-vars", "rhsm_user={{user `rhsm_user`}} rhsm_password={{user `rhsm_password`}} enable_task_debugger=True"
+        "--extra-vars", "enable_task_debugger=True"
       ],
-      "only": ["GCP-RHEL7", "GCP-RHEL6", "VMware-RHEL7", "VMware-RHEL6"]
+      "only": [ "GCP-RHEL6", "GCP-RHEL7", "VMware-RHEL6", "VMware-RHEL7" ]
     },
     {
       "type": "shell",
-      "script": "rhel7-provisioner.sh",
-      "environment_vars":[
-        "RHSM_USER={{user `rhsm_user`}}",
-        "RHSM_PASSWORD={{user `rhsm_password`}}"
+      "inline": [
+        "MAJORVER=`rpm -q --qf '%{Version}\n' redhat-release-server | cut -d'.' -f1`",
+        "subscription-manager repos --enable rhel-${MAJORVER}-server-ansible-2.5-rpms",
+        "yum -y install ansible"
       ],
-      "only": ["Azure-RHEL7"]
+      "only": [ "Azure-RHEL6", "Azure-RHEL7" ]
+    },
+    {
+      "type": "ansible-local",
+      "playbook_file": "rhel-base-image-playbook/site.yml",
+      "playbook_dir": "rhel-base-image-playbook/",
+      "extra_arguments": [
+        "--extra-vars", "enable_task_debugger=True"
+      ],
+      "only": [ "Azure-RHEL6", "Azure-RHEL7" ]
     },
     {
       "type": "shell",
-      "script": "rhel6-provisioner.sh",
-      "environment_vars":[
-        "RHSM_USER={{user `rhsm_user`}}",
-        "RHSM_PASSWORD={{user `rhsm_password`}}"
-      ],
-      "only": ["Azure-RHEL6"]
+      "inline": [ "yum -y remove ansible python-httplib2 python-paramiko python-passlib python2-jmespath sshpass" ],
+      "only": [ "Azure-RHEL6", "Azure-RHEL7" ]
     }
   ],
   "post-processors": [
