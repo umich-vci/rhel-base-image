@@ -4,3 +4,4 @@ packer_cache/
 output-*/
 *-manifest.json
 *.retry
+*.lock
