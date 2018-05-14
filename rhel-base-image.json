@@ -209,7 +209,7 @@
     {
       "type": "shell",
       "inline": [
-        "MAJORVER=`rpm -q --qf '%{Version}\n' redhat-release-server | cut -d'.' -f1`",
+        "MAJORVER=`python -c \"import platform; print platform.dist()[1].split('.')[0]\"`",
         "subscription-manager repos --enable rhel-${MAJORVER}-server-ansible-2.5-rpms",
         "yum -y install ansible"
       ],
