@@ -51,7 +51,7 @@
   lineinfile:
     path: /boot/grub/grub.conf
     backrefs: yes
-    regex: '^\(splashimage=.*\)'
+    regexp: '^\(splashimage=.*\)'
     line: '#\1'
   when: ansible_distribution_major_version|int == 6
 
