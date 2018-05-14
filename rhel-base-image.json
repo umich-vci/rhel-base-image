@@ -210,7 +210,7 @@
       "type": "shell",
       "inline": [
         "MAJORVER=`python -c \"import platform; print platform.dist()[1].split('.')[0]\"`",
-        "subscription-manager repos --enable rhel-${MAJORVER}-server-ansible-2.5-rpms",
+        "yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-${MAJORVER}.noarch.rpm",
         "yum -y install ansible"
       ],
       "only": [ "Azure-RHEL6", "Azure-RHEL7" ]
@@ -226,7 +226,7 @@
     },
     {
       "type": "shell",
-      "inline": [ "yum -y remove ansible python-httplib2 python-paramiko python-passlib python2-jmespath sshpass" ],
+      "inline": [ "yum -y remove ansible python-httplib2 python-paramiko python-passlib python2-jmespath sshpass epel-release" ],
       "only": [ "Azure-RHEL6", "Azure-RHEL7" ]
     }
   ],
